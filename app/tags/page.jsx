@@ -20,7 +20,7 @@ export default function TagsPage(){
         formData.append('tag', tagName);
         files.forEach(f => formData.append('tracks', f));
 
-        const res = await fetch('/api/upload', {method: 'Post', body: formData});
+        const res = await fetch('/api/upload', {method: 'POST', body: formData});
         setMsg(res.ok ? 'Upload success. Training will start' : 'Upload failed');
         
     }
