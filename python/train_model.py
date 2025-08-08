@@ -5,6 +5,7 @@ from tensorflow.keras import layers, models
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.preprocessing.image import load_img, img_to_array, ImageDataGenerator
 from tensorflow.keras.callbacks import EarlyStopping
+import argparse
 
 
 
@@ -26,47 +27,63 @@ def load_data(image_dir, image_size=(128, 128)):
     
     return np.array(X), np.array(Y), label_map
 
-X, Y, label_map = load_data("spectograms")
-X = X/255 #pixels
 
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+def main(data_dir, model_path):
+    X, Y, label_map = load_data(data_dir)
 
-model = models.Sequential([
-    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(128, 128, 3)),
-    layers.BatchNormalization(),
-    layers.MaxPooling2D(2, 2),
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
-    layers.Conv2D(64, (3, 3), activation='relu'),
-    layers.BatchNormalization(),
-    layers.MaxPooling2D(2, 2),
+    model = models.Sequential([
+        layers.Conv2D(32, (3, 3), activation='relu', input_shape=(128, 128, 3)),
+        layers.BatchNormalization(),
+        layers.MaxPooling2D(2, 2),
 
-    layers.Conv2D(128, (3, 3), activation='relu'),
-    layers.BatchNormalization(),
-    layers.MaxPooling2D(2, 2),
+        layers.Conv2D(64, (3, 3), activation='relu'),
+        layers.BatchNormalization(),
+        layers.MaxPooling2D(2, 2),
 
-    layers.Flatten(),
-    layers.Dropout(0.25),
-    layers.Dense(64, activation='relu'),
-    layers.Dense(len(label_map), activation='softmax')
-])
+        layers.Conv2D(128, (3, 3), activation='relu'),
+        layers.BatchNormalization(),
+        layers.MaxPooling2D(2, 2),
 
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        layers.Flatten(),
+        layers.Dropout(0.25),
+        layers.Dense(64, activation='relu'),
+        layers.Dense(len(label_map), activation='softmax')
+    ])
 
-
-datagen = ImageDataGenerator(
-    width_shift_range = 0.1,
-    height_shift_range = 0.1,
-    zoom_range = 0.1,
-    brightness_range=[0.8, 1.2]
-)
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 
-early_stop = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+    datagen = ImageDataGenerator(
+        width_shift_range = 0.1,
+        height_shift_range = 0.1,
+        zoom_range = 0.1,
+        brightness_range=[0.8, 1.2]
+    )
 
-history = model.fit(datagen.flow(X_train, Y_train, batch_size=32), epochs=20, validation_data=(X_test, Y_test))
 
-test_loss, test_acc = model.evaluate(X_test, Y_test, verbose=2)
-print(f"Test accuracy: {test_acc:.2f}")
+    early_stop = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 
-model.save("genre_classifier_model.keras")
-print("Genre label mapping:", label_map)
+    model.fit(
+        datagen.flow(X_train, Y_train, batch_size = 32),
+        epochs = 20,
+        validation_data = (X_test, Y_test),
+        callbacks=[early_stop]
+    )
+
+    test_loss, test_acc = model.evaluate(X_test, Y_test, verbose=2)
+    print(f"Test accuracy: {test_acc:.2f}")
+
+    model.save(model_path)
+    with open(model_path + '.labels', 'w') as f:
+        for genre, idx in label_map.items():
+            f.write(f"{genre}\n")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data_dir', required =True, help = "Spectrogram root (spectograms/)")
+    parser.add_argument('--model_path',  required=True, help="Where to save the .keras model")
+    args = parser.parse_args()
+    main(args.data_dir, args.model_path)
