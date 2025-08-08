@@ -9,7 +9,7 @@ export default function RootLayou({children}){
   return(
     <html lang='en'>
       <head />
-      <body>
+      <body suppressHydrationWarning>
         <header style={{padding: '1rem', background: '#eee'}}>
           <h1>Tag.ai</h1>
         </header>

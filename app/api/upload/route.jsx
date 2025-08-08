@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server"
 import nextConnect from 'next-connect'
 
 //file uploads
@@ -7,25 +6,24 @@ import path from 'path'
 import fs from 'fs'
 import { spawn } from 'child_process/promises'
 
+const PY_DIR    = path.join(process.cwd(), 'python')
+const DATA_DIR  = path.join(process.cwd(), 'data')
+const SPECT_DIR = path.join(process.cwd(), 'spectograms')
+const MODEL_DIR = path.join(process.cwd(), 'models')
 
 
-const UPLOAD_DIR = path.join(process.cwd(), 'tmp', 'uploads');
-fs.mkdirSync(UPLOAD_DIR, {recursive: true});
+for (const d of [DATA_DIR, SPECT_DIR, MODEL_DIR]) fs.mkdirSync(d, {recursive: true})
 
-const PY = path.join(process.cwd(), 'python')
+
 
 const upload = multer({
     storage: multer.diskStorage({
-        destination: (_req, _file, cb) => {
-            const tagDir = path.join(UPLOAD_DIR, req.body.tag);
-            fs.mkdirSync(tagDir, {recursive: true});
-            cb(null, tagDir);
+        destination: (_req, _f, cb) => {
+           const d = path.join(DATA_DIR, req.body.tag)
+           fs.mkdirSync(d, {recursive: true})
+           cb(null, d)
         },
-        filename: (req, file, cb) =>{
-            const timestamp = Date.now();
-            const ext = path.extname(file.originalname);
-            cb(null, `${timestamp}${ext}`);
-        }
+        filename: (_r, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
     }),
 });
 
@@ -35,37 +33,40 @@ const handler = nextConnect({
     onError(err, _req, res){
         res.status(500).json({error: err.message});
     },
-    onNoMatch(_req, res){
-        res.status(405).json({error: 'Method not allowed'});
-    },
 });
 
+handler.use(upload.array('tracks'))
 
-handler.use(upload.array('tracks'));
 
 handler.post(async (req, res) => {
-  const tag = req.body.tag.replace(/\s+/g, '_');
+  const tag= req.body.tag.replace(/\s+/g,'_')
+  const inputDir = path.join(DATA_DIR, tag)
+  const specDir = path.join(SPECT_DIR, tag)
+  const modelPath = path.join(MODEL_DIR, `${tag}.keras`)
   
   
   try {
     await spawn('python', [
-        path.join(PY, 'generate_spectogram.py'),
-        '--input_dir', path.join(UPLOAD_DIR, tag),
-        '--output_dir', path.join(process.cwd(), 'spectograms', tag)
-    ], { stdio: 'inherit' });
+        path.join(PY_DIR,'generate_spectogram.py'),
+        '--input_dir',  inputDir,
+        '--output_dir', specDir
+    ], { stdio:'inherit' })
 
-    console.log('✓ Spectrograms generated');
 
     await spawn('python', [
-        path.join(PY, 'train_model.py'),
-        '--data_dir', path.join(process.cwd(), 'spectograms')
-    ], { stdio: 'inherit' });
+        path.join(PY_DIR,'train_model.py'),
+        '--data_dir',   SPECT_DIR,
+        '--model_path', modelPath
+    ], { stdio:'inherit' })
 
-    console.log('✓ Model training complete');
+    res.json({message:'Training complete', model: path.basename(modelPath)})
 
-    return res.json({ message: 'Training finished successfully.' });
-  } catch (err) {
-    console.error('Error during Python execution:', err);
-    return res.status(500).json({ error: 'Server error during training.' });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: ' error during training.' });
   }
 })
+
+
+export const POST   = handler
+export const config = { api:{ bodyParser:false } }

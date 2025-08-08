@@ -16,7 +16,7 @@ export default function TagsPage(){
             setMsg('Create a tag and upload atleast 10 songs');
             return;
         }
-        const formData = new formData();
+        const formData = new FormData();
         formData.append('tag', tagName);
         files.forEach(f => formData.append('tracks', f));
 
