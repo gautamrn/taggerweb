@@ -8,8 +8,11 @@ import fs from 'fs'
 import { spawn } from 'child_process/promises'
 
 
+
 const UPLOAD_DIR = path.join(process.cwd(), 'tmp', 'uploads');
 fs.mkdirSync(UPLOAD_DIR, {recursive: true});
+
+const PY = path.join(process.cwd(), 'python')
 
 const upload = multer({
     storage: multer.diskStorage({
@@ -43,18 +46,21 @@ handler.use(upload.array('tracks'));
 handler.post(async (req, res) => {
   const tag = req.body.tag.replace(/\s+/g, '_');
   
+  
   try {
     await spawn('python', [
-      'generate_spectogram.py',
-      '--input_dir', path.join(UPLOAD_DIR, tag),
-      '--output_dir', path.join(process.cwd(), 'spectograms', tag)
+        path.join(PY, 'generate_spectogram.py'),
+        '--input_dir', path.join(UPLOAD_DIR, tag),
+        '--output_dir', path.join(process.cwd(), 'spectograms', tag)
     ], { stdio: 'inherit' });
+
     console.log('✓ Spectrograms generated');
 
     await spawn('python', [
-      'train_model.py',
-      '--data_dir', path.join(process.cwd(), 'spectograms')
+        path.join(PY, 'train_model.py'),
+        '--data_dir', path.join(process.cwd(), 'spectograms')
     ], { stdio: 'inherit' });
+
     console.log('✓ Model training complete');
 
     return res.json({ message: 'Training finished successfully.' });
