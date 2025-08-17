@@ -4,20 +4,15 @@ const fs = require('fs').promises;
 
 class AIService {
   constructor() {
-    // Fix the path to point to the correct python folder
     this.pythonPath = path.join(__dirname, '../../../python');
-    
-    // Use the virtual environment Python if it exists, otherwise use system Python
     this.pythonExecutable = this.getPythonExecutable();
   }
 
-  // Get the correct Python executable
   getPythonExecutable() {
     const venvPython = path.join(__dirname, '../../../venv/Scripts/python.exe');
     const systemPython = 'python';
     
     try {
-      // Check if virtual environment exists
       if (require('fs').existsSync(venvPython)) {
         console.log('Using virtual environment Python:', venvPython);
         return venvPython;
@@ -31,7 +26,6 @@ class AIService {
     }
   }
 
-  // Train personal model
   async trainPersonalModel(userId, tracksData) {
     return new Promise((resolve, reject) => {
       console.log('Training personal model for user:', userId);
@@ -48,7 +42,6 @@ class AIService {
       let output = '';
       let errorOutput = '';
 
-      // Add timeout (5 minutes for training)
       const timeout = setTimeout(() => {
         console.error('Training timed out after 5 minutes');
         process.kill('SIGTERM');
@@ -92,14 +85,10 @@ class AIService {
     });
   }
 
-  // Default prediction (empty - user must add custom tags)
   async predictGenreDefault(audioPath) {
-    // Return empty predictions - user must add custom tags
-    // This forces users to train their personal model
     return [];
   }
 
-  // Predict using personal model from file
   async predictGenrePersonalFromFile(audioPath, userId) {
     return new Promise((resolve, reject) => {
       console.log('Running personal prediction from file for user:', userId);

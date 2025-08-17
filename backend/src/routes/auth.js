@@ -6,7 +6,6 @@ const { z } = require('zod');
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -15,7 +14,7 @@ router.post('/login', async (req, res) => {
       where: { email }
     });
 
-    if (!user || user.passwordHash !== password) { // Changed from password to passwordHash
+    if (!user || user.passwordHash !== password) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
@@ -36,7 +35,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Register
 router.post('/register', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -52,7 +50,7 @@ router.post('/register', async (req, res) => {
     const user = await prisma.user.create({
       data: {
         email,
-        passwordHash: password, // Changed from password to passwordHash
+        passwordHash: password,
       }
     });
 

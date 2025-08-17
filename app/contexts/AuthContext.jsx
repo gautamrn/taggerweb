@@ -10,11 +10,9 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
     const token = apiService.getAuthToken();
     if (token) {
-      // You could verify the token here if needed
-      setUser({ token }); // For now, just set basic user info
+      setUser({ token });
     }
     setLoading(false);
   }, []);

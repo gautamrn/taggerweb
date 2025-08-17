@@ -10,7 +10,6 @@ const fs = require('fs').promises;
 
 const router = express.Router();
 
-// Create Prisma client with explicit error handling
 let prisma;
 try {
   prisma = new PrismaClient();
@@ -20,7 +19,6 @@ try {
   prisma = null;
 }
 
-// Test Prisma connection
 async function testPrismaConnection() {
   try {
     await prisma.$connect();
@@ -32,7 +30,6 @@ async function testPrismaConnection() {
   }
 }
 
-// Configure multer
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
@@ -49,7 +46,6 @@ const trackSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Title too long')
 });
 
-// Upload track
 router.post('/upload', auth, upload.single('audio'), async (req, res) => {
   try {
     if (!req.file) {
@@ -58,7 +54,6 @@ router.post('/upload', auth, upload.single('audio'), async (req, res) => {
 
     const { title } = trackSchema.parse(req.body);
     
-    // Save file
     const timestamp = Date.now();
     const originalName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
     const fileName = `${timestamp}_${originalName}`;
@@ -67,10 +62,8 @@ router.post('/upload', auth, upload.single('audio'), async (req, res) => {
     const filePath = path.join(uploadsDir, fileName);
     await fs.writeFile(filePath, req.file.buffer);
 
-    // Upload to Supabase
     await uploadFile(req.file, fileName);
 
-    // Create track
     const track = await prisma.track.create({
       data: {
         title,
@@ -79,7 +72,6 @@ router.post('/upload', auth, upload.single('audio'), async (req, res) => {
       }
     });
 
-    // Check if user has a trained model (check for model file)
     const modelsDir = path.join(__dirname, '../../models');
     const modelInfoPath = path.join(modelsDir, `user_${req.user.id}_info.json`);
     
@@ -109,7 +101,6 @@ router.post('/upload', auth, upload.single('audio'), async (req, res) => {
       predictions = await aiService.predictGenreDefault(filePath);
     }
 
-    // Store predictions
     for (const prediction of predictions) {
       let tag = await prisma.tag.findUnique({
         where: { name: prediction.tag }
@@ -140,7 +131,6 @@ router.post('/upload', auth, upload.single('audio'), async (req, res) => {
   }
 });
 
-// Get tracks
 router.get('/my-tracks', auth, async (req, res) => {
   try {
     const tracks = await prisma.track.findMany({
@@ -160,7 +150,6 @@ router.get('/my-tracks', auth, async (req, res) => {
   }
 });
 
-// Add custom tag
 router.post('/:id/tags', auth, async (req, res) => {
   try {
     const { id } = req.params;
@@ -201,7 +190,6 @@ router.post('/:id/tags', auth, async (req, res) => {
   }
 });
 
-// Train personal model - Simplified version
 router.post('/train-personal-model', auth, async (req, res) => {
   try {
     console.log('=== TRAIN PERSONAL MODEL ===');
@@ -288,7 +276,6 @@ router.post('/train-personal-model', auth, async (req, res) => {
   }
 });
 
-// Debug route to check database
 router.get('/debug-db', auth, async (req, res) => {
   try {
     console.log('=== DEBUG DATABASE ===');
@@ -319,7 +306,6 @@ router.get('/debug-db', auth, async (req, res) => {
   }
 });
 
-// Delete track
 router.delete('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;

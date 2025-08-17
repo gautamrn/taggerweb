@@ -5,7 +5,6 @@ class ApiService {
     this.baseURL = API_BASE_URL;
   }
 
-  // Helper method to get auth token
   getAuthToken() {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('authToken');
@@ -13,21 +12,18 @@ class ApiService {
     return null;
   }
 
-  // Helper method to set auth token
   setAuthToken(token) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('authToken', token);
     }
   }
 
-  // Helper method to remove auth token
   removeAuthToken() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('authToken');
     }
   }
 
-  // Generic request method
   async request(endpoint, options = {}) {
     const token = this.getAuthToken();
     
@@ -78,7 +74,6 @@ class ApiService {
     }
   }
 
-  // Auth endpoints
   async login(email, password) {
     const response = await this.request('/auth/login', {
       method: 'POST',
@@ -109,7 +104,6 @@ class ApiService {
     this.removeAuthToken();
   }
 
-  // Track endpoints
   async getMyTracks() {
     return await this.request('/tracks/my-tracks');
   }
@@ -143,7 +137,6 @@ class ApiService {
     });
   }
 
-  // Custom tag endpoints
   async addCustomTag(trackId, tags) {
     return await this.request(`/tracks/${trackId}/tags`, {
       method: 'POST',
@@ -151,14 +144,12 @@ class ApiService {
     });
   }
 
-  // Training endpoints
   async trainPersonalModel() {
     return await this.request('/tracks/train-personal-model', {
       method: 'POST',
     });
   }
 
-  // Health check
   async healthCheck() {
     return await this.request('/health');
   }
