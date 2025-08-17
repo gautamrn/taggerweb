@@ -1,0 +1,43 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  tracks       Track[]
+}
+
+model Tag {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  predictions Prediction[]
+}
+
+model Track {
+  id          String       @id @default(cuid())
+  title       String
+  fileUrl     String
+  createdAt   DateTime     @default(now())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  predictions Prediction[]
+}
+
+model Prediction {
+  id         String   @id @default(cuid())
+  confidence Float
+  createdAt  DateTime @default(now())
+  tagId      String?
+  tag        Tag?     @relation(fields: [tagId], references: [id])
+  trackId    String
+  track      Track    @relation(fields: [trackId], references: [id])
+}

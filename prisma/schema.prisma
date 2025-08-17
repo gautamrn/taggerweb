@@ -1,0 +1,90 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  tracks       Track[]
+  userModel    UserModel?
+}
+
+model Tag {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  predictions Prediction[]
+}
+
+model Track {
+  id           String   @id @default(cuid())
+  title        String
+  fileUrl      String
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  predictions  Prediction[]
+  audioFeatures AudioFeatures?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("tracks")
+}
+
+model Prediction {
+  id         String   @id @default(cuid())
+  confidence Float
+  createdAt  DateTime @default(now())
+  tagId      String?
+  tag        Tag?     @relation(fields: [tagId], references: [id])
+  trackId    String
+  track      Track    @relation(fields: [trackId], references: [id])
+}
+
+model CustomTag {
+  id        String   @id @default(cuid())
+  name      String
+  trackId   String
+  track     Track    @relation(fields: [trackId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model UserModel {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modelData   String   // Base64 encoded model
+  encoderData String   // Base64 encoded encoder
+  accuracy    Float
+  lastTrained DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("user_models")
+}
+
+// New model to store audio features
+model AudioFeatures {
+  id                    String   @id @default(cuid())
+  trackId              String   @unique
+  track                Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  tempo                Float
+  spectralCentroidMean Float
+  spectralCentroidStd  Float
+  spectralRolloffMean  Float
+  spectralRolloffStd   Float
+  mfccMean             Float
+  mfccStd              Float
+  chromaMean           Float
+  chromaStd            Float
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("audio_features")
+}
